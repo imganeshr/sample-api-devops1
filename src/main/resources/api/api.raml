@@ -1,0 +1,149 @@
+#%RAML 1.0 
+title: sample-api-devops1
+version: v1
+baseUri: https://crm-il-api-dev.bmwgroup.com/api/{version}
+protocols: [ HTTPS ] 
+
+mediaType: application/json
+
+documentation: 
+  - !include documentation/api-doc.raml
+     
+uses:
+  customtype: types/custom-types.raml
+
+#To be used only for Non-hierarchical micro-service architecture  
+resourceTypes:
+  collection: !include libraries/patterns/collection.raml
+  post-only-item: !include libraries/patterns/post-only-item.raml
+  file-item: !include libraries/patterns/file-item.raml
+  read-only-collection: !include libraries/patterns/read-only-collection.raml 
+  read-only-item: !include libraries/patterns/read-only-item.raml
+  read-only-paged-collection: !include libraries/patterns/read-only-paged-collection.raml
+  api-status: !include libraries/patterns/api-status.raml
+  put-only-item : !include libraries/patterns/put-only-item.raml
+       
+traits:
+  paginated: !include libraries/traits/pagination.raml
+  sampleQueryParam: !include libraries/traits/sampleQueryParam.raml
+  200-paged-collection: !include libraries/traits/responses/200-paged-collection.raml 
+  200-collection: !include libraries/traits/responses/200-collection.raml
+  200-file: !include libraries/traits/responses/200-file.raml
+  200-item: !include libraries/traits/responses/200-item.raml   
+  201-item: !include libraries/traits/responses/201-item.raml 
+  202-item: !include libraries/traits/responses/202-item.raml       
+  204-response: !include libraries/traits/responses/204-response.raml   
+  304-fault: !include libraries/traits/responses/304-fault.raml 
+  400-fault: !include libraries/traits/responses/400-fault.raml 
+  401-fault: !include libraries/traits/responses/401-fault.raml
+  403-fault: !include libraries/traits/responses/403-fault.raml
+  404-fault: !include libraries/traits/responses/404-fault.raml
+  405-fault: !include libraries/traits/responses/405-fault.raml
+  406-fault: !include libraries/traits/responses/406-fault.raml
+  407-fault: !include libraries/traits/responses/407-fault.raml
+  415-fault: !include libraries/traits/responses/415-fault.raml
+  422-fault: !include libraries/traits/responses/422-fault.raml
+  429-fault: !include libraries/traits/responses/429-fault.raml
+  500-fault: !include libraries/traits/responses/500-fault.raml
+  503-fault: !include libraries/traits/responses/503-fault.raml
+  504-fault: !include libraries/traits/responses/504-fault.raml
+                
+
+securedBy: [basic-auth]
+securitySchemes:
+  basic-auth:
+    description: |
+      This API supports Basic Authentication.
+    type: Basic Authentication
+/status:
+  type: api-status
+
+#microservices CRUD operations 
+/microservices:
+  type:
+    read-only-item:
+      itemDescription: API resource description
+      itemSummary: API resource description
+      itemType: customtype.Item
+      itemExample: !include examples/responses/200-item-response.json
+      is: [sampleQueryParam  ] 
+
+ 
+  post:      
+    description: POST API resource description
+    body:
+      type: customtype.Item
+      example: !include examples/requests/item-request.json      
+    is: [ 201-item: {itemType: customtype.Item, itemExample: !include examples/responses/200-item-response.json}, 202-item: {itemType: customtype.Item, itemExample: !include examples/responses/200-item-response.json}, 400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault ]
+  
+      
+  /Id:
+    description: API resource description
+    get:
+      description: GET API resource description
+      is: [ 200-item: {itemType: customtype.Item , itemExample: !include examples/responses/200-item-response.json}, 304-fault,400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault  ] 
+
+    put:      
+      description: PUT API resource description
+      body:
+       type: customtype.Item[]
+       example: !include examples/requests/collection-request.json      
+      is: [ 200-collection: {collectionType: customtype.Item, collectionExample: !include examples/responses/200-collection-response.json}, 400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault ]
+
+    patch:      
+      description: PATCH API resource description
+      body:
+        type: customtype.Item
+        example: !include examples/requests/item-request.json      
+      is: [ 201-item: {itemType: customtype.Item, itemExample: !include examples/responses/200-item-response.json}, 202-item: {itemType: customtype.Item, itemExample: !include examples/responses/200-item-response.json}, 400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault ]
+    delete:
+      description: DELETE API resource description
+      is: [ 200-item: {itemType: customtype.Item, itemExample: !include examples/responses/200-item-response.json}, 204-response,
+        400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault ]
+
+
+#Different Response patterns from Apis- Item, collection and paged-collection
+/response-variants:
+  /item:
+    description: Variants of GET responses
+    get:
+      description: Single Item GET API resource 
+      is: [ 200-item: {itemType: customtype.Item , itemExample: !include examples/responses/200-item-response.json}, 304-fault,400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault  ] 
+  /collection:
+    get:
+      description: Collection of Items GET API resource 
+      is: [ 200-collection: {collectionType: customtype.Item, collectionExample: !include examples/responses/200-collection-response.json}, 400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault ]
+  /paged-collection: #paginated is a trait defined for setting offset and max limit
+    get:
+      description: Paged-Collection of Items GET API resource 
+      is: [ 200-item: {itemType: customtype.PagedCollectionResponsetype , itemExample: !include examples/responses/200-paged-collection-response.json}, 304-fault,400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault,
+            paginated: {maxItems: 100}  ]
+
+
+#Various file and form-data Content types
+/filetypes:
+  /binaryOctet:
+    post:
+      body:
+        binary/octet-stream:
+          description: The file to be uploaded as binary
+          type: file
+          #required: true                        
+      is: [ 200-item: {itemType: customtype.Item , itemExample: !include examples/responses/200-item-response.json}, 304-fault,400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault  ]
+  /urlencoded:
+    post: 
+      description: 
+      body:
+        application/x-www-form-urlencoded:
+          type: customtype.FormDataSample
+      is: [ 201-item: {itemType: customtype.Item, itemExample: !include examples/responses/200-item-response.json}, 202-item: {itemType: customtype.Item, itemExample: !include examples/responses/200-item-response.json}, 400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault ]
+  /attachment:
+    post:
+      body:
+        multipart/form-data:
+          description: The file to be uploaded as attachment
+          type: file
+          #required: true                        
+      is: [ 200-item: {itemType: customtype.Item , itemExample: !include examples/responses/200-item-response.json}, 304-fault,400-fault,401-fault,403-fault,404-fault,405-fault,406-fault,407-fault,415-fault,422-fault,429-fault,500-fault,503-fault,504-fault  ]
+
+     

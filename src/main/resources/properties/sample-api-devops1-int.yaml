@@ -1,0 +1,12 @@
+http.basePath: "/*"
+
+#Should be the url to the internal application host    
+backend-application.host: "internal-bmw-host"
+#Default port for HTTPS is 443
+backend-application.port: "443"
+backend-application.basePath: "/"
+backend-application.path: "sample-backend-appliaction"
+
+ks.file.path: "keystore-qa.jks"
+ks.password: ""
+ks.file.password: ""

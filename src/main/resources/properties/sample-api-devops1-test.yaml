@@ -1,0 +1,25 @@
+
+#Should be the url to the internal application host    
+backend-application.host: "internal-bmw-host"
+#Default port for HTTPS is 443
+backend-application.port: "443"
+backend-application.basePath: "/ "
+backend-application.path: "sample-backend-appliaction"
+
+#keystore details
+ks.file.path: "keystore-dev.jks"
+ks.password: ""
+ks.file.password: ""
+
+#error-api details
+error.api.protocol: "HTTPS"
+error.api.port: "443"
+error.api.host: "internal-il-test-emea-lb.lb-prod-eu-rt.anypointdns.net"
+error.api.path: "/test/errors/v1"
+
+policy.auth.user: "![123]"
+policy.auth.pass: "![234]"
+
+
+
+

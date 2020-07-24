@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:spring="http://www.mulesoft.org/schema/mule/spring"
+	xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<!-- imports for common logging and error handling frameworks -->
+	<!--<import doc:name="Import Common Logging Framework" doc:id="42de6305-449e-4646-a693-8b82590175b3" file="common-logging-framework.xml" doc:description="Importing Common Logging Framework"/>
+	 <import doc:name="Import Common Error Handling Framework" doc:id="b5a79228-adf6-4920-bd24-bf7371b81086" file="common-error-handling.xml" doc:description="Importing Error Handling Framework
+"/> -->
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="cd4e957b-96a0-45a2-9745-cad92410d4a9" doc:description="API Listener for the application" >
+		<http:listener-connection host="${https.private.host}" port="${https.private.port}"/>
+	</http:listener-config>
+   
+	<configuration-properties doc:name="Configuration properties" doc:id="a249e2d7-10cf-4ce4-8322-01fcd3fd3de1" file="properties/sample-api-devops1-${env}.yaml" doc:description="Loading Env properties files"/>
+	<http:request-config name="SampleHTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="2cbe9a3c-65d1-458f-b19b-6d88bef29151" doc:description="Requesting a system with REST call">
+		<http:request-connection host="0.0.0.0" port="8082" />
+	</http:request-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="1bc54e80-e546-4cac-b6e6-3cbecb0eea64" file="properties/common.yaml" doc:description="Loading common properties config"/>
+	
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="2c9a0979-6d4d-41a2-bde3-bfcd29dcbe01" file="properties/sample-api-devops1-${env}.yaml" key="${enc.key}" >
+		<secure-properties:encrypt algorithm="DESede" />
+	</secure-properties:config>
+	
+	<http:request-config name="error_api_client_request_config"
+    doc:name="error_api_client_request_config" doc:id="11ee12c9-c804-4891-8ae1-c720374c36a6" sendCorrelationId="ALWAYS">
+    <http:request-connection host="${error.api.host}" port="${error.api.port}" protocol="${error.api.protocol}">
+      <http:authentication>
+        <http:basic-authentication username="${policy.auth.user}" password="${policy.auth.pass}" />
+      </http:authentication>
+    </http:request-connection>
+  </http:request-config>
+	<flow name="get:\api-status:api-config">
+	 <http:listener config-ref="HTTP_Listener_config" path="/">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+            </http:error-response>
+        </http:listener>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="6ed73ca5-3af2-4b38-ae70-568e8279e9c9">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  status: "OK",
+  version: p('api.version'),
+  time: now()
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+</mule>

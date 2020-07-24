@@ -1,0 +1,16 @@
+https.private.host: "0.0.0.0"
+https.private.port: "8092"
+#base path for all api's
+https.basePath: "/api/v1/*"
+https.console.path: "/console/*"
+
+
+basic.auth.authorities: "WHCRM-USER"
+basic.auth.files: "beans.xml"
+spring.security.provider.name: "memory-provider"
+spring.delegate.reference: "authenticationManager"
+
+api.version: "v1"
+
+error.api.retry: "3"
+error.api.retry.duration: "10000"

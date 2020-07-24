@@ -1,0 +1,13 @@
+#%RAML 1.0 DataType
+type: object
+displayName: Simple Item Datatype
+properties:
+  total: number
+  entities:
+    type: array
+    items: 
+      type: object
+      properties: 
+        id: string
+        name: string
+        

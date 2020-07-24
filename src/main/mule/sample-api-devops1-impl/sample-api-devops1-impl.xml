@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	
+	<sub-flow name="implementation-templateFlow" doc:id="b17f6a29-372d-4857-90f1-aa42e5c8311d" >
+		<flow-ref doc:name="log-application-subflow-entry" doc:id="082112e5-a334-44e4-869f-fca3f284a969" name="log-application-subflow-entry"/>
+		<ee:transform doc:name="Transform Message" doc:id="b2a4f21a-df10-4577-8258-9d6530f626df">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: 200,
+	message: "Hello World!"
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="log-application-subflow-exit" doc:id="db20e32f-b479-4620-9b6e-e72714239799" name="log-application-subflow-exit"/>
+	</sub-flow>
+	<sub-flow name="sample-backend-application-call-subflow" doc:id="7c78d0cc-cdc8-48bf-bc79-b2d7f083c1de" >
+		<flow-ref doc:name="log-application-subflow-entry" doc:id="7c2008b3-c966-4cef-a5db-64024c4675ea" name="log-application-subflow-entry"/>
+		<ee:transform doc:name="Form request payload" doc:id="3a14120b-e8de-45d5-b1ec-ce433c0fa153" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	requestBody: {
+		key: payload
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log beginning HTTP request" doc:id="979e7c60-c6c3-4516-9ab4-55ebc3bf7c4f" />
+		<http:request method="GET" doc:name="Sample Http Request" doc:id="05ad58c1-47c3-4b62-8f77-28eea2a60d56" config-ref="SampleHTTP_Request_configuration" path="/sample-request" >
+			<error-mapping targetType="EON:CUSTOMFAULT" />
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"request-id" : if (payload.requestID != null)
+  payload.requestID
+else
+  uuid
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="Log HTTP response received" doc:id="0db4d871-79f8-4a38-854d-de16d20f12df" />
+		<ee:transform doc:name="Transform response" doc:id="008c8627-905d-4c5c-936e-050c112368a6">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: payload
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+		<flow-ref doc:name="log-application-subflow-exit" doc:id="631301c5-afcc-4375-b4f4-1819fda91fdf" name="log-application-subflow-exit"/>
+	</sub-flow>
+	
+	<flow name="put:\microservices:application-impl\json:api-config">
+	<flow-ref doc:name="log-application-subflow-entry" doc:id="e5243322-3c97-44e1-956a-791d10918dbe" name="log-application-subflow-entry"/>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="e7a8a7b6-86c1-4ef9-9670-d5219648feb3">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+  {
+    id: "12345",
+    name: "EAI"
+  }, 
+  {
+    id: "45678",
+    name: "BFSI"
+  }
+]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<flow-ref doc:name="log-application-subflow-exit" doc:id="f0049593-094f-46d0-8200-56945ebb02aa" name="log-application-subflow-exit" />
+    </flow>
+    <flow name="delete:\microservices-impl\(Id):api-config">
+    <flow-ref doc:name="log-application-subflow-entry" doc:id="1941ca0f-4234-43ea-a67c-ccf9ad123b64" name="log-application-subflow-entry"/>
+    
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="Id">attributes.uriParams.'Id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "12345",
+  name: "EAI"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<flow-ref doc:name="log-application-subflow-exit" doc:id="82bba93c-a62b-45cf-ac05-80d84f67af21" name="log-application-subflow-exit" />
+    </flow>
+    <flow name="patch:\microservices-impl\(Id):application\json:api-config">
+    <flow-ref doc:name="log-application-subflow-entry" doc:id="4a9174e5-b98f-476c-bd19-e8d97e2be9bb" name="log-application-subflow-entry"/>
+    
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="Id">attributes.uriParams.'Id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "12345",
+  name: "EAI"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<flow-ref doc:name="log-application-subflow-exit" doc:id="a776953e-3b06-4ff4-b250-ed8abc39e8ab" name="log-application-subflow-exit" />
+    </flow>
+    <flow name="get:\microservices-impl:api-config">
+    <flow-ref doc:name="log-application-subflow-entry" doc:id="f3c22beb-4818-403f-80b8-6fddb6636b29" name="log-application-subflow-entry"/>
+    
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  orderId: "X123",
+  status: "Shipped"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<flow-ref doc:name="log-application-subflow-exit" doc:id="5ea49872-d58c-41a4-8f81-66971182b3d0" name="log-application-subflow-exit" />
+    </flow>
+    <flow name="get:\microservices-impl\(Id):api-config">
+    <flow-ref doc:name="log-application-subflow-entry" doc:id="a8d1d164-27da-4fee-8528-7d4c49428615" name="log-application-subflow-entry"/>
+    
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" doc:id="61854b3c-797d-4018-bb3a-fa347c6d5ccb">
+            <ee:variables>
+                <ee:set-variable variableName="Id"><![CDATA[attributes.uriParams.'Id']]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<flow-ref doc:name="log-application-subflow-exit" doc:id="1c0df725-f3d7-4d6d-baee-fc1465ac160d" name="log-application-subflow-exit" />
+    </flow>
+    <flow name="post:\microservices-impl:application\json:api-config">
+    <flow-ref doc:name="log-application-subflow-entry" doc:id="37314f3a-e2c2-46dc-b65d-be2b44463e55" name="log-application-subflow-entry"/>
+    
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "12345",
+  name: "EAI"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<flow-ref doc:name="log-application-subflow-exit" doc:id="1a1e7380-947b-469e-aacb-648f693054e3" name="log-application-subflow-exit" />
+    </flow>
+</mule>

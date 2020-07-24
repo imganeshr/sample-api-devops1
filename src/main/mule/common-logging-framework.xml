@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+	<sub-flow name="log-receiver-entry-flow" doc:id="0dbf8b32-8bc6-4087-8fcf-5f5da7773b7e">
+		<set-variable
+			value="#[if (attributes.headers.'transaction-start-time' != null) attributes.headers.'transaction-start-time' as DateTime else now()]"
+			doc:name="Get Transaction Start Time" doc:id="258050d5-b0c8-4b89-869b-c914fedad669"
+			variableName="transactionStartTime" />
+		<ee:transform doc:name="Transform Message"
+			doc:id="c662e35d-e938-4953-9b26-44619fccac00">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="jsonLogger"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"appName": app.name,
+	"transactionStage": "CALL-ENTRY",
+	"transactionId": correlationId,
+	"transactionStartTime": vars.transactionStartTime,
+	"resourcePath": attributes.requestUri,
+	"httpMethod": attributes.method,
+	"httpMethodOverride": attributes.headers.'x-http-method-override',
+	("httpHeaders": vars.outboundHeaders) if(vars.outboundHeaders != null)
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logging JSON Variable" doc:id="5cda8e41-d127-403f-adf3-f51afb038583" message="#[vars.jsonLogger]" category="il.de.bmw.common.logger"/>
+	
+
+</sub-flow>
+	<sub-flow name="log-dispatcher-exit-flow" doc:id="c878b0e8-625e-45e0-bada-61336ea70b1d">
+		<ee:transform doc:name="Transform Message"
+			doc:id="9db9dd3a-4791-45ee-8adb-0075d2566690">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="jsonLogger"><![CDATA[%dw 2.0
+output application/json
+var transactionEndTime = now()
+---
+{
+	"appName": app.name,
+	"transactionStage": "CALL-EXIT",
+	"transactionId": correlationId,
+	"transactionStartTime": vars.transactionStartTime,
+	"transactionEndTime": transactionEndTime,
+	"transactionLatency": (transactionEndTime as Number {unit: "milliseconds"}) - (vars.transactionStartTime as Number {unit: "milliseconds"}),
+	("httpResponseStatus": vars.httpResponse) if (vars.httpResponse != null)
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logging JSON Variable" doc:id="26df8e52-a70d-40da-a76f-7f22a6fbb4c2" message="#[vars.jsonLogger]" category="il.de.bmw.common.logger"/>
+		<remove-variable doc:name="Remove Transaction Start Time" doc:id="7928a4b0-ff2c-4a7d-9357-8d83cb298ffc" variableName="transactionStartTime"/>
+	
+
+</sub-flow>
+	<sub-flow name="log-application-flow-entry" doc:id="0ebc08e0-4c00-4c9f-993c-8d4ddbc8f4a8">
+		<set-variable value="#[now()]" doc:name="Set flowStartTime" doc:id="8518e2c8-f6d7-4886-9a7c-679a2d23ca92" variableName="flowStartTime" />
+		<ee:transform doc:name="Application Flow Entry Logger  transformer" doc:id="165131a8-a1e2-4437-a7c0-c8e944e60e87">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="jsonLogger"><![CDATA[%dw 2.0
+output application/json
+var flowStartTime = vars.flowStartTime
+---
+{
+	"appName": app.name,
+	"transactionStage": "RESOURCE-ENTRY",
+	"transactionId": correlationId,
+	("flowName":vars.flowName) if (vars.flowName != null),
+	"flowStartTime": flowStartTime,
+	("additionalInfo": vars.additionalInfo) if (vars.additionalInfo != null)
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logging JSON Variable" doc:id="828151e1-f1b4-4ce1-86ab-f2245922114c" message="#[vars.jsonLogger]" category="il.de.bmw.common.logger"/>
+		<remove-variable doc:name="Remove Additional Info" doc:id="cc5b6b34-3a17-42f3-b4a5-e27e885bd17c" variableName="additionalInfo" />
+	
+
+</sub-flow>
+	<sub-flow name="log-application-flow-exit" doc:id="881c5ba1-13ab-4904-9593-1823957ec022">
+		<ee:transform doc:name="Application Flow Exit Logger Transformer"
+			doc:id="98b66762-cbd7-427c-b6ea-bfd83d6e3aa4">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="jsonLogger"><![CDATA[%dw 2.0
+output application/json
+var flowEndTime = now()
+---
+{
+	"appName": app.name,
+	"transactionStage": "RESOURCE-EXIT",
+	"transactionId": correlationId,
+	("flowName":vars.flowName) if (vars.flowName != null),
+	"flowStartTime": vars.flowStartTime,
+	"flowEndTime": flowEndTime,
+	"flowLatency": (flowEndTime as Number {unit: "milliseconds"}) - (vars.flowStartTime as Number {unit: "milliseconds"}),
+	("additionalInfo": vars.additionalInfo) if (vars.additionalInfo != null)
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logging JSON Variable" doc:id="1c05b691-70ee-450f-befe-5f4a3a43af81" message="#[vars.jsonLogger]" category="il.de.bmw.common.logger"/>
+		<remove-variable doc:name="Remove flowStartTime" doc:id="b9fa1857-840d-4d74-9baa-d3a011cee4e0" variableName="flowStartTime" />
+		<remove-variable doc:name="Remove Additional Info" doc:id="038aefcf-29a7-44a8-91de-fde273638c28" variableName="additionalInfo" />
+	
+
+</sub-flow>
+	<sub-flow name="log-application-subflow-entry" doc:id="01baa712-9ec8-4cbb-ab83-b1cf6da876d4">
+		<ee:transform doc:name="Sub Entry Logger  transformer" doc:id="0bec1607-6904-4c4d-8efe-bd0102edc858">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="jsonLogger"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"appName": app.name,
+	"transactionStage": "SUB-FLOW-ENTRY",
+	"transactionId": correlationId,
+	("subFlowName": vars.subFlowName) if (vars.subFlowName != null),
+	("additionalInfo": vars.additionalInfo) if (vars.additionalInfo != null)
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logging JSON Variable" doc:id="d0323dad-7926-4fdb-821c-0099964c8681" message="#[vars.jsonLogger]" category="il.de.bmw.common.logger"/>
+		<remove-variable doc:name="Remove Additional Info" doc:id="97e59041-6fe5-4e1d-ae26-7322e3a426c1" variableName="additionalInfo" />
+	
+
+</sub-flow>
+	
+	<sub-flow name="log-application-subflow-exit" doc:id="1634a683-7122-47a4-8299-64611005d70e">
+		<ee:transform doc:name="Sub Exit Logger Transformer" doc:id="1f08e6c5-15a3-43a2-a0f4-f0598dc78467">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="jsonLogger"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"appName": app.name,
+	"transactionStage": "SUB-FLOW-EXIT",
+	("subFlowName": vars.subFlowName) if (vars.subFlowName != null),
+	"transactionId": correlationId,
+	("additionalInfo": vars.additionalInfo) if (vars.additionalInfo != null)
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logging JSON Variable" doc:id="b38d52a0-18ba-476e-966a-8cca3f659089" message="#[vars.jsonLogger]" category="il.de.bmw.common.logger"/>
+		<remove-variable doc:name="Remove Additional Info" doc:id="058f7e05-8e07-499d-af4a-46ddc529ae1e" variableName="additionalInfo" />
+	
+</sub-flow>
+
+</mule>
